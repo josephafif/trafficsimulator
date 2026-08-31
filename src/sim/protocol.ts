@@ -12,11 +12,16 @@ import type { SimConfig } from './config.ts';
 import type { Phase, SignalMode } from '../net/signals.ts';
 
 /**
- * Fält per fordon i renderingsbufferten: x, y, riktning, packad typ/tillstånd och
- * fordonets index. Indexet följer med för att ett klick i kartan ska kunna fråga
- * simuleringen om just den bilens resa.
+ * Fält per fordon i renderingsbufferten: x, y, riktning, packad typ/tillstånd,
+ * fordonets index och farten i m/s.
+ *
+ * Indexet följer med för att ett klick i kartan ska kunna fråga simuleringen om
+ * just den bilens resa. Farten följer med för att renderingen ska kunna räkna
+ * fram var bilen är *mellan* två simuleringssteg: steget är en kvarts sekund
+ * medan skärmen ritar sextio bilder i sekunden, så utan det rycker bilarna fram
+ * i stället för att rulla.
  */
-export const VEHICLE_STRIDE = 5;
+export const VEHICLE_STRIDE = 6;
 
 export interface RenderNetwork {
   name: string;

@@ -5,8 +5,7 @@
 
 import {
   button, clockText, downloadText, el, nf, nf1, note, numberField, row, section, selectField,
-  slider, stat, toggle, type SectionHandle,
-} from './dom.ts';
+  slider, stat, toggle, type SectionHandle, chip, chipRow,} from './dom.ts';
 import {
   LinkMetric,
   type Bottleneck, type LinkInfo, type RenderNetwork, type RenderSignal,
@@ -21,6 +20,8 @@ export interface AppState {
   showVehicles: boolean;
   showSignals: boolean;
   showLabels: boolean;
+  /** Rita vägnätet. Går att släcka för att se enbart trafiken över en flygbild. */
+  showRoads: boolean;
   showZones: boolean;
   showBottlenecks: boolean;
   autoFocus: boolean;
@@ -139,23 +140,22 @@ function buildViewPanel(ui: Ui, panel: SectionHandle): void {
     toggle('Visa signaler', ui.state.showSignals, (v) => (ui.state.showSignals = v)),
     toggle('Visa gatunamn', ui.state.showLabels, (v) => (ui.state.showLabels = v)),
     toggle('Flygbild som bakgrund', false, (v) => ui.setSatellite(v)),
-    el('h4', { class: 'group-title', text: 'Verksamheter och målpunkter' }),
-    note('Visar var stadens målpunkter ligger. Prickens storlek följer hur mycket trafik platsen drar till sig.'),
-    ...PLACE_KINDS.map((k) =>
-      toggle(k.label, false, (v) => ui.togglePlaceKind(k.kind, v)),
-    ),
+    toggle('Visa vägnät', ui.state.showRoads, (v) => (ui.state.showRoads = v)),
+    el('h4', { class: 'group-title', text: 'Målpunkter på kartan' }),
+    chipRow(...PLACE_KINDS.map((k) => chip(k.label, false, (v) => ui.togglePlaceKind(k.kind, v)))),
+    note('Prickens storlek följer hur mycket trafik platsen drar till sig.'),
     toggle('Visa flaskhalsnålar', ui.state.showBottlenecks, (v) => (ui.state.showBottlenecks = v)),
     toggle('Visa trafikzoner', ui.state.showZones, (v) => (ui.state.showZones = v),
-      'Zonerna kommer från markanvändningen och är där resorna börjar och slutar.'),
+      'Där resorna börjar och slutar.'),
     el('hr', { class: 'sep' }),
     toggle('Detaljerad simulering följer kartan', ui.state.autoFocus, (v) => {
       ui.state.autoFocus = v;
       if (!v && ui.state.fullMicro) ui.send({ type: 'focus', x: 0, y: 0, radius: 0, full: true });
-    }, 'Fordon simuleras ett och ett där du tittar, och som flöden i resten av nätet.'),
+    }, 'Fordon för fordon där du tittar, flöden i resten.'),
     toggle('Kör hela nätet fordon för fordon', ui.state.fullMicro, (v) => {
       ui.state.fullMicro = v;
       if (v) ui.send({ type: 'focus', x: 0, y: 0, radius: 0, full: true });
-    }, 'Ger exakta siffror för hela staden men kräver mycket mer räknekraft.'),
+    }, 'Exakt men mycket tyngre.'),
     el('hr', { class: 'sep' }),
     row(button('Spara kartbild (PNG)', () => ui.exportImage(), 'ghost')),
     note('Skift + dra mäter avstånd. Klicka på en gata för att välja den.'),
@@ -165,11 +165,11 @@ function buildViewPanel(ui: Ui, panel: SectionHandle): void {
 /** Verksamhetsgrupperna som går att visa på kartan. */
 const PLACE_KINDS: { kind: number; label: string }[] = [
   { kind: 0, label: 'Handel' },
-  { kind: 3, label: 'Skola och universitet' },
+  { kind: 3, label: 'Utbildning' },
   { kind: 4, label: 'Vård' },
   { kind: 1, label: 'Kontor' },
-  { kind: 2, label: 'Industri och lager' },
-  { kind: 5, label: 'Övriga målpunkter' },
+  { kind: 2, label: 'Industri' },
+  { kind: 5, label: 'Övrigt' },
 ];
 
 // --- Valt fordon --------------------------------------------------------------------

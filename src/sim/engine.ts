@@ -1125,7 +1125,9 @@ export class Simulation {
     }
 
     // Rätt gren finns på länken men i ett annat körfält: ge filbytet en chans så
-    // länge det finns sträcka kvar att göra det på.
+    // länge det finns sträcka kvar att göra det på. Fordonet ska normalt aldrig
+    // hamna här — det väljer rätt fil redan när det kommer in på länken — och när
+    // det ändå gör det är avståndet kort.
     if (want >= 0 && distToLine > 25 && s.forcing[v] === 0) {
       const lanes = this.linkLanes(link);
       for (let other = 0; other < lanes; other++) {
@@ -1448,6 +1450,49 @@ export class Simulation {
     return this.idm(v, gap, s.speed[leader]);
   }
 
+  /**
+   * Vilket körfält fordonet ska in i när det kommer ut på en ny länk.
+   *
+   * Riktig trafik sorterar sig i god tid: den som ska svänga av ligger redan i
+   * rätt fil när avfarten kommer. Väljs filen bara efter var fordonet råkade
+   * komma ut ur korsningen får det i stället upptäcka vid stopplinjen att det
+   * står fel, och tvingas stanna och vänta på en lucka — mitt i vägen, med hela
+   * kön bakom sig. Det är den inbromsningen som syns vid varje av- och påfart.
+   *
+   * `preferred` är filen svängrörelsen mynnar i. Den behålls om den duger.
+   */
+  private entryLane(v: number, link: number, preferred: number): number {
+    const lanes = this.linkLanes(link);
+    const want = this.routeNext(v, link);
+    const start = Math.min(preferred, lanes - 1);
+    if (want < 0 || this.laneServes(link, start, want)) {
+      return this.freeLaneNear(link, start, v);
+    }
+    // Sök utåt från den fil rörelsen mynnar i, så bytet blir så litet som möjligt.
+    for (let d = 1; d < lanes; d++) {
+      for (const cand of [start - d, start + d]) {
+        if (cand < 0 || cand >= lanes) continue;
+        if (!this.laneServes(link, cand, want)) continue;
+        if (this.laneRoom(link, cand)) return cand;
+      }
+    }
+    return this.freeLaneNear(link, start, v);
+  }
+
+  /** Närmaste körfält med plats, räknat från ett önskat fält. */
+  private freeLaneNear(link: number, preferred: number, v: number): number {
+    const lanes = this.linkLanes(link);
+    const start = Math.min(Math.max(preferred, 0), lanes - 1);
+    if (this.laneRoom(link, start)) return start;
+    for (let d = 1; d < lanes; d++) {
+      for (const cand of [start - d, start + d]) {
+        if (cand >= 0 && cand < lanes && this.laneRoom(link, cand)) return cand;
+      }
+    }
+    void v;
+    return start;
+  }
+
   /** Leder körfältet till den gren fordonet ska ta? */
   private laneServes(link: number, lane: number, want: number): boolean {
     if (want < 0) return true;
@@ -1640,7 +1685,7 @@ export class Simulation {
         // Beslutet att tvinga sig fram gäller tills hela korsningen är passerad.
         const forced = s.forcing[v] === 1;
         if (this.linkMicro[toLink] === 1) {
-          const lane = Math.min(mv.connToLane[conn], this.linkLanes(toLink) - 1);
+          const lane = this.entryLane(v, toLink, mv.connToLane[conn]);
           if (!this.laneRoom(toLink, lane, 0, forced)) {
             // Kön har vuxit tillbaka in i korsningen. Här är det ingen dödlägesventil
             // som ska öppnas — fordonet ryms fysiskt inte, och blir stående i

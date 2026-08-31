@@ -116,17 +116,28 @@ void main() {
   outColor = vec4(ramp(t), alpha);
 }`;
 
+/** Fordonsfärger som syns mot en flygbild: ljusa och varma. */
+const IMAGERY_VEHICLES: [number, number, number][] = [
+  [1, 1, 1],
+  [0.65, 0.86, 1],
+  [1, 0.72, 0.32],
+  [1, 0.9, 0.4],
+];
+
 const VEH_VS = `#version 300 es
 precision highp float;
 in vec2 a_corner;
 in vec2 a_pos;
 in float a_heading;
 in float a_packed;
+in float a_speed;
 
 uniform vec2 u_center;
 uniform vec2 u_viewport;
 uniform float u_scale;
 uniform float u_minPx;
+/** Simulerade sekunder sedan bilderna beräknades, för mjuk rörelse mellan stegen. */
+uniform float u_ahead;
 uniform vec3 u_types[4];
 uniform vec3 u_stopped;
 uniform vec3 u_meso;
@@ -154,7 +165,11 @@ void main() {
   float c = cos(a_heading);
   float s = sin(a_heading);
   vec2 rotated = vec2(local.x * c - local.y * s, local.x * s + local.y * c);
-  vec2 world = a_pos + rotated;
+  // Flytta fram bilen längs sin egen riktning den bit den hunnit sedan
+  // simuleringssteget beräknades. Steget är en kvarts sekund medan skärmen ritar
+  // sextio bilder — utan det här rycker trafiken fram fyra gånger i sekunden i
+  // stället för att rulla.
+  vec2 world = a_pos + vec2(c, s) * (a_speed * u_ahead) + rotated;
 
   vec2 screen = (world - u_center) * u_scale;
   gl_Position = vec4(screen / (u_viewport * 0.5), 0.0, 1.0);
@@ -255,6 +270,8 @@ export class GlMap {
   private theme: MapTheme;
   /** Ligger det en flygbild under? Då ska bakgrunden vara genomskinlig. */
   private backdrop = false;
+  /** Simulerade sekunder sedan fordonsbufferten beräknades. */
+  private ahead = 0;
 
   constructor(canvas: HTMLCanvasElement, net: RenderNetwork, theme: MapTheme) {
     // Alfakanalen behövs för att kunna lägga en flygbild under vägnätet. Utan
@@ -290,6 +307,7 @@ export class GlMap {
       { name: 'a_pos', size: 2, offset: 0 },
       { name: 'a_heading', size: 1, offset: 8 },
       { name: 'a_packed', size: 1, offset: 12 },
+      { name: 'a_speed', size: 1, offset: 20 },
     ], VEHICLE_STRIDE * 4);
 
     this.sigVao = gl.createVertexArray()!;
@@ -381,6 +399,15 @@ export class GlMap {
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, this.texWidth, this.texHeight, gl.RED, gl.FLOAT, padded);
   }
 
+  /**
+   * Hur långt fram fordonen ska ritas jämfört med senaste simuleringssteget.
+   * Begränsas till ett steg så att bilarna aldrig ritas förbi det som faktiskt
+   * hänt — bättre att röra sig lite för lite än att glida genom en kö.
+   */
+  setAhead(seconds: number): void {
+    this.ahead = Math.max(0, Math.min(seconds, 0.25));
+  }
+
   updateVehicles(data: Float32Array, count: number): void {
     const gl = this.gl;
     this.vehCount = count;
@@ -401,7 +428,10 @@ export class GlMap {
     gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
   }
 
-  render(cam: Camera, opts: { mode: number; showVehicles: boolean; showSignals: boolean }): void {
+  render(
+    cam: Camera,
+    opts: { mode: number; showVehicles: boolean; showSignals: boolean; showRoads: boolean },
+  ): void {
     const gl = this.gl;
     const w = Math.round(cam.width * cam.dpr);
     const h = Math.round(cam.height * cam.dpr);
@@ -424,6 +454,10 @@ export class GlMap {
     if (scale > 0.09) lodLimit = LOD_MINOR;
     const indexEnd = this.lodStart[lodLimit + 1];
 
+    // Vägnätet går att släcka helt. Över en flygbild är gatorna redan synliga i
+    // bilden, och då är det trafiken man vill se — inte ett färglager ovanpå
+    // vägar som redan finns där.
+    if (opts.showRoads) {
     gl.useProgram(this.roadProgram);
     gl.bindVertexArray(this.roadVao);
     gl.activeTexture(gl.TEXTURE0);
@@ -450,6 +484,7 @@ export class GlMap {
     gl.uniform1f(u('u_widen'), 0);
     gl.uniform1i(u('u_mode'), opts.mode);
     gl.drawElements(gl.TRIANGLES, indexEnd, gl.UNSIGNED_INT, 0);
+    }
 
     if (opts.showVehicles && this.vehCount > 0 && scale > 0.012) {
       gl.useProgram(this.vehProgram);
@@ -458,10 +493,18 @@ export class GlMap {
       gl.uniform2f(vu('u_center'), cam.x, cam.y);
       gl.uniform2f(vu('u_viewport'), viewport[0], viewport[1]);
       gl.uniform1f(vu('u_scale'), scale);
-      gl.uniform1f(vu('u_minPx'), 1.1);
-      gl.uniform3fv(vu('u_types'), new Float32Array(this.theme.vehicle.flat()));
-      gl.uniform3fv(vu('u_stopped'), new Float32Array(this.theme.vehicleStopped));
-      gl.uniform3fv(vu('u_meso'), new Float32Array(this.theme.vehicleMeso));
+      gl.uniform1f(vu('u_minPx'), opts.showRoads ? 1.1 : 1.6);
+      gl.uniform1f(vu('u_ahead'), this.ahead);
+      // Över en flygbild gäller inte temats fordonsfärger. Bilden är mörk och
+      // brokig, och ett mörkt fordon försvinner rakt in i den — oavsett om
+      // gränssnittet i övrigt är ljust eller mörkt. Ljusa fordon läses som
+      // fordon mot vad som helst.
+      const veh = this.backdrop ? IMAGERY_VEHICLES : this.theme.vehicle;
+      const stopped = this.backdrop ? [1, 0.35, 0.3] : this.theme.vehicleStopped;
+      const meso = this.backdrop ? [0.78, 0.83, 0.9] : this.theme.vehicleMeso;
+      gl.uniform3fv(vu('u_types'), new Float32Array(veh.flat()));
+      gl.uniform3fv(vu('u_stopped'), new Float32Array(stopped));
+      gl.uniform3fv(vu('u_meso'), new Float32Array(meso));
       gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, this.vehCount);
     }
 

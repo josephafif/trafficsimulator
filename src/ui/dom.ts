@@ -190,3 +190,32 @@ export function downloadText(filename: string, text: string): void {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+/**
+ * Liten på/av-knapp avsedd att ligga i rad med andra.
+ *
+ * Sex reglage under varandra tar en tredjedel av panelen och läses som en lista
+ * att arbeta sig igenom. Samma sex val som chip tar två rader och läses som vad
+ * de är: en uppsättning man plockar ur.
+ */
+export function chip(label: string, active: boolean, onToggle: (on: boolean) => void): HTMLElement {
+  let on = active;
+  const el0 = el('button', {
+    class: 'chip-toggle' + (on ? ' on' : ''),
+    type: 'button',
+    text: label,
+    onclick: () => {
+      on = !on;
+      el0.classList.toggle('on', on);
+      el0.setAttribute('aria-pressed', String(on));
+      onToggle(on);
+    },
+  });
+  el0.setAttribute('aria-pressed', String(on));
+  return el0;
+}
+
+/** Rad med chip som radbryter av sig själv. */
+export function chipRow(...items: HTMLElement[]): HTMLElement {
+  return el('div', { class: 'chip-row' }, items);
+}

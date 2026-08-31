@@ -50,6 +50,7 @@ export class App {
     metric: LinkMetric.Speed,
     showVehicles: true,
     showSignals: true,
+    showRoads: true,
     showLabels: true,
     showZones: false,
     showBottlenecks: true,
@@ -73,6 +74,18 @@ export class App {
   private pickCount = 0;
   private trip: VehicleInfo | null = null;
   private playBtn: HTMLElement | null = null;
+  /**
+   * När simuleringen senast *flyttade* fordonen, i verklig tid, och vilken
+   * simuleringstid det motsvarade.
+   *
+   * Bildrutor kommer sextio gånger i sekunden oavsett om ett simuleringssteg
+   * hunnit tas. Mäts tiden från senaste bildrutan blir svaret alltid någon
+   * millisekund, och utjämningen får ingenting att arbeta med — fordonen rycker
+   * fram precis som förut. Det som räknas är tiden sedan positionerna faktiskt
+   * ändrades.
+   */
+  private frameWallTime = 0;
+  private frameSimTime = -1;
   private tiles: TileLayer | null = null;
   /** Flygbild som bakgrund. */
   satellite = false;
@@ -335,6 +348,11 @@ export class App {
         // blocket och blir då frånkopplad — fordonen måste alltså ligga i
         // GPU-bufferten innan dess, inte läsas om vid varje bildruta.
         this.map?.updateVehicles(new Float32Array(msg.buffer), msg.vehicleCount);
+        // Klockan startas om bara när simuleringen verkligen tagit ett steg.
+        if (msg.stats.time !== this.frameSimTime) {
+          this.frameSimTime = msg.stats.time;
+          this.frameWallTime = performance.now();
+        }
         this.capturePicking(new Float32Array(msg.buffer), msg.vehicleCount);
         this.bottlenecks = msg.bottlenecks;
         this.map?.updateMetric(msg.linkMetric);
@@ -851,6 +869,15 @@ export class App {
         : this.state.metric === LinkMetric.Queue || this.state.metric === LinkMetric.Delay ? 3
         : 1;
 
+      // Hur långt fram fordonen ska ritas: den simulerade tid som hunnit gå
+      // sedan bufferten beräknades. Utan det rör de sig i ryck vid låg fart.
+      if (this.playing) {
+        const wall = (performance.now() - this.frameWallTime) / 1000;
+        this.map.setAhead(wall * this.speed);
+      } else {
+        this.map.setAhead(0);
+      }
+
       // Flygbilden ritas först, i sin egen yta bakom vägnätet.
       if (this.satellite && this.tiles) this.tiles.render(this.cam);
 
@@ -858,6 +885,7 @@ export class App {
         mode: metricMode,
         showVehicles: this.state.showVehicles,
         showSignals: this.state.showSignals,
+        showRoads: this.state.showRoads,
       });
       this.overlay.render(this.cam, {
         selectedLink: this.state.selectedLink,

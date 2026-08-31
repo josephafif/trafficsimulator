@@ -15,7 +15,17 @@
   --good: #34d399;
   --warn: #fbbf24;
   --bad: #f87171;
-  --radius: 9px;
+  /* Ett gemensamt måttsystem. Att kontroller har samma höjd, samma hörnradie och
+     avstånd ur samma skala är det som avgör om ett gränssnitt känns lugnt — mer
+     än vilka färger som används. */
+  --radius: 8px;
+  --radius-sm: 6px;
+  --radius-lg: 12px;
+  --control-h: 30px;
+  --gap-1: 4px;
+  --gap-2: 8px;
+  --gap-3: 12px;
+  --gap-4: 18px;
   --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
   --shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
@@ -91,53 +101,67 @@ body {
 .topbar {
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 0 16px;
-  height: 54px;
-  flex: 0 0 54px;
+  gap: var(--gap-3);
+  padding: 0 var(--gap-4);
+  height: 56px;
+  flex: 0 0 56px;
   background: var(--bg-panel);
   border-bottom: 1px solid var(--line);
   z-index: 30;
 }
 
-.brand { display: flex; align-items: center; gap: 10px; }
+.brand { display: flex; align-items: center; gap: var(--gap-2); margin-right: var(--gap-1); }
 
 .brand-mark {
-  width: 22px; height: 22px; border-radius: 6px;
+  width: 20px; height: 20px; border-radius: var(--radius-sm);
   background: conic-gradient(from 210deg, #f87171 0 33%, #fbbf24 0 66%, #34d399 0);
-  box-shadow: 0 0 0 1px var(--line), 0 2px 10px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 0 0 1px var(--line);
 }
 
-.brand-name { display: block; font-weight: 650; letter-spacing: -0.01em; }
-.brand-sub { display: block; font-size: 10.5px; color: var(--text-faint); }
+.brand-name {
+  display: block; font-weight: 600; font-size: 13.5px;
+  letter-spacing: -0.01em; white-space: nowrap;
+}
+/* Undertexten säger inget som inte redan står i panelerna och stjäl bara plats. */
+.brand-sub { display: none; }
 
-.city-select { margin: 0; min-width: 200px; }
-.city-select .field-head { display: none; }
+.city-select, .hour-select { margin: 0; }
+.city-select { min-width: 170px; }
+.hour-select { min-width: 158px; }
+.city-select .field-head, .hour-select .field-head { display: none; }
+.city-select .select, .hour-select .select {
+  height: var(--control-h);
+  padding: 0 26px 0 10px;
+  font-size: 12.5px;
+  font-family: var(--font);
+}
 
+/* Uppspelningen samlad i en enhet: spela, tempo, klocka. */
 .transport {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: var(--gap-2);
   margin-left: auto;
-  padding: 4px 6px 4px 4px;
-  background: var(--bg-panel);
+  height: var(--control-h);
+  padding: 0 var(--gap-2) 0 var(--gap-1);
+  background: var(--bg-elev);
   border: 1px solid var(--line);
   border-radius: 999px;
 }
 
 .speed-value {
-  font-family: var(--mono); font-size: 11.5px; color: var(--text-dim);
-  min-width: 26px; text-align: center;
-}
-
-.clock {
-  font-family: var(--mono); font-size: 15px; font-weight: 600;
-  letter-spacing: 0.02em; padding: 0 10px 0 6px;
+  font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+  min-width: 28px; text-align: center;
   font-variant-numeric: tabular-nums;
 }
 
-.status {
-  font-size: 11.5px; color: var(--text-faint);
-  max-width: 340px; text-align: right;
+.clock {
+  font-family: var(--mono); font-size: 14px; font-weight: 600;
+  letter-spacing: 0.01em; padding-left: var(--gap-2);
+  border-left: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+  min-width: 54px; text-align: center;
 }
+
+.status { display: none; }
 
 /* --- Arbetsyta ----------------------------------------------------------------- */
 
@@ -171,13 +195,14 @@ body {
 /* --- Paneler -------------------------------------------------------------------- */
 
 .panel { border-bottom: 1px solid var(--line-soft); }
+.panel:last-child { border-bottom: 0; }
 
 .panel-head {
   width: 100%;
-  display: flex; align-items: center; gap: 8px;
-  padding: 12px 14px;
+  display: flex; align-items: center; gap: var(--gap-2);
+  padding: 13px var(--gap-4);
   background: none; border: 0; cursor: pointer;
-  color: var(--text); font: inherit; font-weight: 600; font-size: 12.5px;
+  color: var(--text); font: inherit; font-weight: 550; font-size: 13px;
   text-align: left;
 }
 .panel-head:hover { background: color-mix(in srgb, var(--text) 4%, transparent); }
@@ -198,18 +223,18 @@ body {
 }
 .panel.open .panel-chevron { transform: rotate(90deg); }
 
-.panel-body { display: none; padding: 2px 14px 16px; }
+.panel-body { display: none; padding: 0 var(--gap-4) var(--gap-4); }
 .panel.open .panel-body { display: block; }
 
 .group-title {
-  margin: 18px 0 8px;
-  font-size: 10.5px; font-weight: 650;
-  text-transform: uppercase; letter-spacing: 0.07em;
+  margin: var(--gap-4) 0 var(--gap-2);
+  font-size: 10.5px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
   color: var(--text-faint);
 }
 .group-title:first-child { margin-top: 4px; }
 
-.sep { border: 0; border-top: 1px solid var(--line-soft); margin: 14px 0; }
+.sep { border: 0; border-top: 1px solid var(--line-soft); margin: var(--gap-4) 0; }
 
 .note {
   margin: 8px 0; font-size: 11px; line-height: 1.5;
@@ -218,7 +243,7 @@ body {
 
 /* --- Fält ------------------------------------------------------------------------ */
 
-.field { display: block; margin: 12px 0; }
+.field { display: block; margin: var(--gap-3) 0; }
 
 .field-head {
   display: flex; justify-content: space-between; align-items: baseline;
@@ -254,11 +279,12 @@ input[type='range']::-moz-range-thumb {
 }
 
 .num, .select {
-  width: 100%; padding: 7px 9px;
+  width: 100%; height: var(--control-h); padding: 0 10px;
   background: var(--bg-elev); color: var(--text);
-  border: 1px solid var(--line); border-radius: 7px;
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
   font: inherit; font-family: var(--mono); font-size: 12px;
 }
+.select { padding-right: 26px; }
 .num:focus, .select:focus { outline: none; border-color: var(--accent-dim); }
 .num.small { width: 74px; }
 .select { font-family: var(--font); }
@@ -266,6 +292,7 @@ input[type='range']::-moz-range-thumb {
 /* --- Switch ---------------------------------------------------------------------- */
 
 .switch {
+  min-height: 26px;
   display: flex; align-items: flex-start; gap: 10px;
   margin: 10px 0; cursor: pointer;
 }
@@ -291,6 +318,7 @@ input[type='range']::-moz-range-thumb {
 /* --- Knappar ---------------------------------------------------------------------- */
 
 .btn {
+  height: var(--control-h);
   padding: 7px 13px;
   background: var(--accent); color: #ffffff;
   border: 0; border-radius: 7px;
@@ -307,9 +335,10 @@ input[type='range']::-moz-range-thumb {
 .btn.ghost:hover { background: var(--line-soft); }
 
 .btn.danger { background: var(--bad); color: #fff; }
-.btn.tiny { padding: 3px 7px; font-size: 11px; }
+.btn.tiny { height: 24px; padding: 0 9px; font-size: 11px; }
 
 .btn.play {
+  width: 26px; flex: 0 0 26px; height: 26px; padding: 0;
   width: 30px; height: 30px; padding: 0;
   border-radius: 50%; font-size: 11px;
   display: grid; place-items: center;
@@ -321,12 +350,12 @@ input[type='range']::-moz-range-thumb {
 .file-btn { position: relative; display: inline-flex; align-items: center; }
 
 .theme-btn {
-  width: 32px; height: 32px; flex: 0 0 32px;
-  padding: 0; font-size: 15px; line-height: 1;
+  width: var(--control-h); flex: 0 0 var(--control-h);
+  padding: 0; font-size: 14px; line-height: 1;
   display: grid; place-items: center;
 }
 
-.row { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.row { display: flex; gap: var(--gap-2); flex-wrap: wrap; margin: var(--gap-3) 0; }
 
 /* --- Statistikrutor ----------------------------------------------------------------- */
 
@@ -621,8 +650,10 @@ input[type='range']::-moz-range-thumb {
 
   /* Större träffytor för fingrar. */
   .panel-head { padding: 15px 16px; }
-  .switch { padding: 4px 0; }
-  .btn { padding: 9px 15px; }
+  .switch {
+  min-height: 26px; padding: 4px 0; }
+  .btn {
+  height: var(--control-h); padding: 9px 15px; }
   input[type='range'] { height: 30px; }
   input[type='range']::-webkit-slider-thumb { width: 18px; height: 18px; margin-top: -7.5px; }
   input[type='range']::-moz-range-thumb { width: 18px; height: 18px; }
@@ -688,3 +719,79 @@ input[type='range']::-moz-range-thumb {
   display: none;
 }
 .map-tiles.on { display: block; }
+
+/* --- Nyckeltalsremsan: lugnare och lättare att läsa --------------------------- */
+
+.kpi-row {
+  gap: 0;
+  border-radius: var(--radius-lg);
+  padding: 2px;
+}
+
+.kpi {
+  padding: 8px 15px;
+  min-width: 92px;
+}
+.kpi + .kpi { border-left: 1px solid var(--line-soft); }
+
+.kpi-value {
+  font-size: 14px; font-weight: 600;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.kpi-label {
+  font-size: 10px; color: var(--text-faint);
+  letter-spacing: 0.01em; margin-top: 1px;
+}
+
+/* --- Teckenförklaring --------------------------------------------------------- */
+
+.legend {
+  border-radius: var(--radius);
+  padding: 9px 11px;
+}
+.legend-title {
+  font-size: 9.5px; letter-spacing: 0.06em; font-weight: 600;
+  color: var(--text-faint); margin-bottom: 6px;
+}
+.legend-item { gap: 7px; font-size: 10.5px; }
+.legend-item i { width: 14px; height: 3px; border-radius: 2px; }
+
+/* Mobilen behåller sin egen höjd på toppraden. */
+@media (max-width: 860px) {
+  .topbar { height: 52px; flex: 0 0 52px; padding: 0 12px; gap: 8px; }
+  .sidebar { top: 52px; }
+}
+
+/* --- Chip: kompakta på/av-val i rad ------------------------------------------- */
+
+.chip-row {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin: var(--gap-2) 0;
+}
+
+.chip-toggle {
+  height: 26px; padding: 0 11px;
+  background: var(--bg-elev); color: var(--text-dim);
+  border: 1px solid var(--line); border-radius: 999px;
+  font: inherit; font-size: 11.5px; line-height: 1;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.chip-toggle:hover { border-color: var(--accent-dim); color: var(--text); }
+.chip-toggle.on {
+  background: var(--accent); color: #fff;
+  border-color: transparent;
+}
+
+/* Pilen får inte lägga sig över texten när fältet är smalt. */
+.city-select .select, .hour-select .select {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+@media (max-width: 860px) {
+  .city-select { min-width: 0; flex: 1 1 auto; max-width: 150px; }
+  .city-select .select { padding-right: 30px; font-size: 12px; }
+}

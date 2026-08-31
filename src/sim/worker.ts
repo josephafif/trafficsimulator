@@ -53,6 +53,8 @@ let followed = -1;
  * resor ska hinna fram och långa vara igång.
  */
 let warmupLeft = 0;
+/** Brutet antal simuleringssteg som sparas mellan bildrutor. */
+let stepCarry = 0;
 const WARMUP_SECONDS = 10 * 60;
 
 const post = (msg: FromWorker, transfer: Transferable[] = []): void => {
@@ -84,6 +86,8 @@ function handle(msg: ToWorker): void {
       playing = msg.playing;
       speedFactor = msg.speed;
       lastTick = performance.now();
+      // Sparade steg från före pausen ska inte tas igen på en gång.
+      stepCarry = 0;
       break;
     case 'config':
       Object.assign(sim.config, msg.patch);
@@ -399,12 +403,16 @@ function startLoop(): void {
         post({ type: 'progress', text: 'Fyller nätet med trafik … ' + Math.round(done * 100) + ' %' });
       }
     } else if (playing && sim) {
-      const target = wall * speedFactor;
       const dt = sim.config.dt;
-      // Ta aldrig fler steg än vad som hinns med — annars halkar tråden efter
-      // och blir sittande i en spiral av inhämtningssteg.
+      // Antalet steg per bildruta är nästan alltid ett brutet tal: en bildruta är
+      // 16 ms och ett simuleringssteg 250 ms, så vid realtid ska det tas ett steg
+      // var sextonde bildruta. Avrundas det per bildruta blir svaret noll varje
+      // gång och klockan står helt stilla — allt under åtta gånger realtid slutar
+      // fungera. Resten sparas därför till nästa bildruta i stället.
+      stepCarry += (wall * speedFactor) / dt;
       const maxSteps = 240;
-      let steps = Math.min(maxSteps, Math.round(target / dt));
+      let steps = Math.min(maxSteps, Math.floor(stepCarry));
+      stepCarry -= steps;
       const budgetEnd = now + 28;
       while (steps-- > 0) {
         sim.step(dt);
@@ -440,6 +448,7 @@ function sendFrame(s: Simulation): void {
     const meso = s.s.state[v] === VState.Meso ? 1 : 0;
     view[o + 3] = s.s.type[v] + stopped * 8 + meso * 16;
     view[o + 4] = v;
+    view[o + 5] = s.s.speed[v];
     n++;
   }
 

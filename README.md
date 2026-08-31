@@ -154,11 +154,20 @@ tomma medan lokalgatorna får ta hela lasten.
 eftermiddagsrusning eller natt, och nätet fylls först med den trafik som hör till
 tiden så att bilden visar en pågående rusning och inte en tom stad. Pausknappen och
 hastighetsreglaget är skilda åt: att pausa ändrar inte tempot, och tempot går att
-ställa steglöst från realtid till 32 gånger. Mellanslag pausar och startar.
+ställa från realtid till 32 gånger. Mellanslag pausar och startar.
 
-**Flygbild:** under Vy och lager går det att lägga en flygbild under vägnätet.
-Bilderna kommer från Esri World Imagery och kräver internetanslutning; källan visas
-i kartans hörn.
+Simuleringen räknar i steg om en kvarts sekund medan skärmen ritar sextio bilder i
+sekunden. Renderingen flyttar därför fram fordonen längs deras egen riktning den
+bit de hunnit sedan simuleringen senast flyttade dem — utan det rycker trafiken
+fram fyra gånger i sekunden i stället för att rulla. Tiden räknas från senaste
+*steget*, inte från senaste bildrutan: bildrutor kommer sextio gånger i sekunden
+oavsett om ett steg hunnit tas, och mäter man mot dem blir utjämningen verkningslös.
+
+**Flygbild:** under Vy och lager går det att lägga en flygbild under vägnätet, och
+att släcka vägnätet helt. Med bara flygbild och fordon syns trafiken röra sig över
+den verkliga staden — gatorna finns ju redan i bilden. Fordonen får ljusa färger
+över flygbild, eftersom mörka bilar försvinner i den. Bilderna kommer från Esri
+World Imagery och kräver internetanslutning; källan visas i kartans hörn.
 
 **Verksamheter på kartan:** under Vy och lager går det att tända handel, skolor,
 vård, kontor och industri var för sig. Prickens storlek följer hur mycket trafik
