@@ -160,7 +160,11 @@ void main() {
   // Under en viss zoom blir fordonet en prick istället för en bil.
   float halfLenPx = max(len * 0.5 * u_scale, u_minPx);
   float halfWidPx = max(wid * 0.5 * u_scale, u_minPx * 0.62);
-  vec2 local = vec2(a_corner.x * halfLenPx, a_corner.y * halfWidPx) / u_scale;
+  // Positionen är fordonets front, inte dess mitt. Ritas karossen centrerad på
+  // punkten hamnar halva fordonet framför sin egen front — en buss sticker då in
+  // tolv meter i korsningen och ser ut att köra rakt genom korsande trafik.
+  // Karossen skjuts därför bakåt med halva sin längd.
+  vec2 local = vec2((a_corner.x - 1.0) * halfLenPx, a_corner.y * halfWidPx) / u_scale;
 
   float c = cos(a_heading);
   float s = sin(a_heading);

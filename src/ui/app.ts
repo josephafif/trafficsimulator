@@ -675,6 +675,14 @@ export class App {
     }
 
     const link = this.overlay!.pickLink(this.cam, wx, wy, e.pointerType === 'mouse' ? 12 : 22);
+    // Klick vid sidan av allt betyder "avmarkera" — annars sitter en vald bil
+    // eller gata kvar och man har ingen väg ur den.
+    if (link < 0) {
+      this.state.selectedLink = -1;
+      this.panels?.updateLink(null);
+      this.clearTrip();
+      return;
+    }
     this.state.selectedLink = link;
     if (link >= 0) this.send({ type: 'inspect', link });
     else this.panels?.updateLink(null);

@@ -61,7 +61,12 @@ export interface SimConfig {
   stopSignGap: number;
   /** Tid som krävs stillastående vid stopplikt, sekunder. */
   stopSignDwell: number;
-  /** Andel förare som kör på gult när de kunde ha stannat. */
+  /**
+   * Andel förare som kör på gult trots att de hade kunnat stanna.
+   *
+   * Var fjärde förare är för mycket: då passerar nästan en procent av all trafik
+   * mot rött, vilket är flera gånger vad som händer i verkligheten.
+   */
   amberRunning: number;
   /**
    * Förbud mot att köra in i en korsning man inte kan lämna. Avstängt ger
@@ -119,7 +124,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   roundaboutGap: 4.0,
   stopSignGap: 6.0,
   stopSignDwell: 1.5,
-  amberRunning: 0.25,
+  amberRunning: 0.1,
   blockingRule: true,
   speedLimitDelta: 0,
 

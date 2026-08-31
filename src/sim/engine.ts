@@ -1987,7 +1987,16 @@ export class Simulation {
       seen.add(link);
       const start = this.net.linkGeomStart[link];
       const end = this.net.linkGeomStart[link + 1];
-      for (let k = start; k < end; k++) pts.push(this.net.geomX[k], this.net.geomY[k]);
+      // På den länk fordonet redan står på ska linjen börja vid fordonet.
+      // Ritas hela länken ut viker rutten först bakåt till gatans början och
+      // sedan fram igen, vilket ser ut som en felaktig omväg.
+      let from = start;
+      if (step === 0 && s.state[v] !== VState.OnConn && link === s.link[v]) {
+        const along = this.mv.linkStartOff[link] + s.pos[v];
+        while (from < end - 1 && this.net.geomCum[from + 1] < along) from++;
+        metres -= Math.min(s.pos[v], this.mv.linkDriveLen[link]);
+      }
+      for (let k = from; k < end; k++) pts.push(this.net.geomX[k], this.net.geomY[k]);
       metres += this.mv.linkDriveLen[link];
       if (link === s.destLink[v]) break;
       const next = this.routeNext(v, link);
