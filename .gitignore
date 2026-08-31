@@ -37,3 +37,7 @@ pnpm-debug.log*
 # IDE
 .vscode/
 .idea/
+
+# Tillfälliga paket från deploy-verktyget
+deploy-*.zip
+
