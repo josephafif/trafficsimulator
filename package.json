@@ -1,0 +1,21 @@
+{
+  "name": "trafiksimulator",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "fetch": "node scripts/fetch-osm.mjs",
+    "fetch:uppsala": "node scripts/fetch-osm.mjs uppsala",
+    "inspect": "node --max-old-space-size=4096 scripts/inspect.mjs",
+    "simtest": "node --max-old-space-size=6144 scripts/simtest.mjs",
+    "diagnose": "node --max-old-space-size=6144 scripts/diagnose.mjs",
+    "calibrate": "node --max-old-space-size=6144 scripts/calibrate.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5"
+  }
+}

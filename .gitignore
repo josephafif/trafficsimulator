@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Claude / AI instructions
+.claude/
+CLAUDE.md
+.claude.md
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Deployment/local config
+.netlify/
+
+# Caches
+.shots/
+.cache/
+**/.cache/
+.vite/
+**/.vite/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# IDE
+.vscode/
+.idea/

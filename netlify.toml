@@ -1,0 +1,19 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# Kartdatan är ett stort statiskt utdrag som bara byts när den hämtas om.
+# Låt webbläsaren behålla den istället för att ladda ner 7 MB vid varje besök.
+[[headers]]
+  for = "/data/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, must-revalidate"
+
+# Byggda tillgångar har innehållshash i filnamnet och kan cachas permanent.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
